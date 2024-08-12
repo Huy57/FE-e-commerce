@@ -1,0 +1,147 @@
+<ng-container *transloco="let t">
+  <div class="w-full h-full px-4">
+    <mat-card class="bg-card h-full">
+      <div class="header border-b flex justify-between">
+        <div class="text-2xl font-bold card-title mb-3 flex justify-between gap-5">
+          <div class="flex items-stretch justify-between gap-2 relative">
+            <form (ngSubmit)="doSearch()" class="content overflow-hidden flex justify-between gap-2" [formGroup]="formSearch">
+              <div class="field flex-col w-full">
+                <div class="flex gap-2 input w-full mt-[30px] lg:mt-0 min-w-60 xs:min-w-80 sm:min-w-100 ls:min-w-120 lg:min-w-80 xl:min-w-120 xxl:min-w-140">
+                  <!-- <label class=" font-medium">{{t("common.keyword")}}</label> -->
+                  <mat-form-field class="fuse-mat-no-subscript w-full sm:mt-0 bg-card">
+                    <span (click)="doSearch()" class="p-1 rounded-full hover:bg-[#DEE2E6]">
+                      <svg width="24" height="24">
+                        <use xlink:href="#icon_search"></use>
+                      </svg>
+                    </span>
+                    <input
+                      class="ml-2 w-full"
+                      [placeholder]="('common.searchRecord.contract' | transloco)"
+                      formControlName="keyword"
+                      matInput
+                      appTrimString
+                    />
+                  </mat-form-field>
+                </div>
+              </div>
+            </form>
+            <button mat-raised-button
+                    *ngIf="!conditionLength"
+                    (click)="openDialogFilter()"
+                    style=" background-color: #3d5275; color: #4C5153;">
+              <svg width="24" height="24">
+                <use xlink:href="#icon_filter"></use>
+              </svg>
+              <span class="ml-1 text-white">{{"hrm-management.staff.filter.button" | transloco}}</span>
+            </button>
+            <div
+              class="border-[color:var(--hrm-primary)] bg-[#F3F3F9] border min-w-48 rounded flex items-center justify-center cursor-pointer"
+              *ngIf="conditionLength > 0"
+              (click)="openDialogFilter()"
+            >
+              <div class="flex items-center gap-1">
+                <div>
+                  <svg width="24" height="24" class="stroke-current-color">
+                    <use xlink:href="#icon_filter_blue"></use>
+                  </svg>
+                </div>
+                <div class="text-[color:var(--hrm-primary)] text-[14px]">{{t("hrm-management.staff.filter.filterInclude")}} {{conditionLength}} {{conditionLength>1 ? t("hrm-management.staff.filter.conditions") : t("hrm-management.staff.filter.condition") }} </div>
+              </div>
+            </div>
+            <app-multiple-filter
+              [typeFilter]="typeFilter.CONTRACT"
+              [listFirstDropDown]="listConditionContract"
+              [(conditions)]="listCondition"
+              (reloadData)="doSearch()"
+              (listConditionLength)="conditionLength = $event"
+              [(openDialogFilter)]="isOpenDialogFilter"
+            ></app-multiple-filter>
+          </div>
+        </div>
+        <div class="mb-2 relative">
+          <button
+            *hasAnyAuthority="_permissionCodeName+'_CREATE'"
+            mat-raised-button
+            style="background-color:var(--hrm-primary); color: #F1F5F9;"
+            (click)="test = !test"
+          >
+            <mat-icon class="icon-size-6" svgIcon="heroicons_outline:plus"></mat-icon>
+            <span class="hidden mx:block">{{t('button.new')}}</span>
+          </button>
+
+          <div *ngIf="test" (hrmClickOutside)="test = false" class="absolute right-0 top-[105%] flex flex-col bg-white w-max py-2 rounded-md z-10" style="box-shadow: 4px 2px 20px rgba(0, 0, 0, 0.25)">
+            <span (click)="addOrEdit()" class="px-4 py-2 font-bold cursor-pointer hover:bg-[#ccc]">{{t('add-new-contract')}}</span>
+            <span (click)="addOrEditDecision()" class="px-4 py-2 font-bold cursor-pointer hover:bg-[#ccc]">{{t('add-new-decision')}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="content mt-4 w-full">
+        <div class="data-table w-full mt-4">
+          <app-data-table
+            [roleName]="_permissionCodeName"
+            [rows]="searchResult.data || []"
+            [columns]="columns"
+            [paginate]="true"
+            [(pageIndex)]="searchModel.page"
+            [limit]="searchModel.pageSize"
+            [count]="searchResult.totalRecords"
+            [rowTemplate]="rowTemplate"
+            (action)="actionClick($event)"
+            (pageChange)="doSearch($event)"
+            (sort)="doSearch($event)"
+
+          >
+            <ng-template #rowTemplate let-row="row" let-column="column">
+              <ng-container [ngSwitch]="column.columnDef">
+                <ng-container *ngSwitchDefault>
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': column.align }">
+                    {{ row[column.columnDef] }}
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'code'">
+                  <div class="flex" [ngStyle]="{ 'justify-content': column.align }">
+                    <div class="max-w-[250px] truncate px-2" [matTooltip]="row[column.columnDef]" matTooltipClass="cus-tooltip">
+                      {{ row[column.columnDef] }}
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'contractFilePath'">
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': column.align }">
+                    <span
+                      *ngIf="row.documentName"
+                      class="cursor-pointer text-[color:var(--hrm-primary)] underline underline-offset-2"
+                      (click)="download(row.contractFilePath, row.documentName)"
+                    >
+                      {{ 'hrm-management.contract.link'| transloco }}
+                    </span>
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'effDate'">
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': column.align }">
+                    {{ formatDate(row.effDate) }}
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'expDate'">
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': column.align }">
+                    {{ row.expDate ? formatDate(row.expDate) : '_' }}
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'salary'">
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': row.salary ? column.align : column.alignNull }">
+                    {{ formatCurrency(row.salary) ? formatCurrency(row.salary) : '_' }}
+                  </div>
+                </ng-container>
+                <ng-container *ngSwitchCase="'type'">
+                  <div class="flex px-2" [ngStyle]="{ 'justify-content': column.align }">
+                    {{ row.contractType | transloco }}
+                  </div>
+                </ng-container>
+              </ng-container>
+            </ng-template>
+          </app-data-table>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</ng-container>
